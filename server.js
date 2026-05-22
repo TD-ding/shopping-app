@@ -11,18 +11,20 @@ app.use(express.static(path.join(__dirname, 'public')));
 const productsPath = path.join(__dirname, 'data', 'products.json');
 const ordersPath = path.join(__dirname, 'data', 'orders.json');
 
+const MAX_QUANTITY = 99;
+
 function readJSON(filePath) {
   if (!fs.existsSync(filePath)) return [];
-  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  try {
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
 }
 
 function writeJSON(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-}
-
-function escapeHTML(str) {
-  if (typeof str !== 'string') return str;
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 app.get('/api/products', (req, res) => {
@@ -58,7 +60,7 @@ app.post('/api/orders', (req, res) => {
     if (!product) {
       return res.status(400).json({ error: `商品不存在（id: ${item.id}）` });
     }
-    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+    if (!Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > MAX_QUANTITY) {
       return res.status(400).json({ error: '商品数量无效' });
     }
     total += product.price * item.quantity;
@@ -73,9 +75,9 @@ app.post('/api/orders', (req, res) => {
   const orders = readJSON(ordersPath);
   const order = {
     id: Date.now(),
-    name: escapeHTML(name),
-    phone: escapeHTML(phone),
-    address: escapeHTML(address),
+    name,
+    phone,
+    address,
     items: verifiedItems,
     total,
     createdAt: new Date().toISOString()
