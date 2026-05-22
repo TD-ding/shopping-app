@@ -27,8 +27,16 @@
     <div class="toolbar">
       <div class="search-box">
         <input type="text" id="search-input" placeholder="搜索商品...">
+        <button class="search-clear hidden" id="search-clear" title="清除">&times;</button>
       </div>
-      <div class="category-bar" id="category-bar"></div>
+      <div class="toolbar-row">
+        <div class="category-bar" id="category-bar"></div>
+        <div class="sort-bar">
+          <button class="sort-btn active" data-sort="default">默认</button>
+          <button class="sort-btn" data-sort="asc">价格 ↑</button>
+          <button class="sort-btn" data-sort="desc">价格 ↓</button>
+        </div>
+      </div>
     </div>
     <div class="product-grid" id="product-grid"></div>
   </main>

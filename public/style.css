@@ -132,10 +132,17 @@ nav {
   margin-bottom: 24px;
 }
 
-.search-box input {
+.search-box {
+  position: relative;
+  display: inline-block;
   width: 100%;
   max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
   padding: 10px 16px;
+  padding-right: 36px;
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.95rem;
@@ -147,11 +154,70 @@ nav {
   border-color: var(--primary);
 }
 
+.search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.search-clear:hover {
+  color: var(--text);
+}
+
+.search-clear.hidden {
+  display: none;
+}
+
+.toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .category-bar {
   display: flex;
   gap: 8px;
-  margin-top: 16px;
   flex-wrap: wrap;
+}
+
+.sort-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.sort-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.sort-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.sort-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
 }
 
 .cat-btn {

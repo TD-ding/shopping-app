@@ -1,9 +1,13 @@
 let products = [];
 let cart = [];
 let allCategories = [];
-let toastTimer = null;
+let currentSort = 'default';
 let submitting = false;
 
+const MAX_QUANTITY = 99;
+const CART_KEY = 'mini_shop_cart';
+
+// --- 工具函数 ---
 function escapeHTML(str) {
   if (typeof str !== 'string') return str;
   const div = document.createElement('div');
@@ -15,8 +19,30 @@ function formatPrice(value) {
   return '¥' + Number(value).toFixed(2);
 }
 
+function maskPhone(phone) {
+  if (typeof phone !== 'string' || phone.length < 7) return phone;
+  return phone.slice(0, 3) + '****' + phone.slice(-4);
+}
+
+// --- localStorage ---
+function saveCart() {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  } catch { /* ignore */ }
+}
+
+function loadCart() {
+  try {
+    const data = localStorage.getItem(CART_KEY);
+    if (data) cart = JSON.parse(data);
+  } catch { /* ignore */ }
+}
+
 // --- Init ---
 async function init() {
+  loadCart();
+  updateCartBadge();
+
   try {
     await Promise.all([loadProducts(), loadCategories()]);
     bindEvents();
@@ -42,23 +68,37 @@ async function loadCategories() {
 }
 
 function bindEvents() {
-  const catBar = document.getElementById('category-bar');
-  allCategories.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.className = 'cat-btn' + (cat === 'all' ? ' active' : '');
-    btn.dataset.category = cat;
-    btn.textContent = cat === 'all' ? '全部' : cat;
-    catBar.appendChild(btn);
-  });
+  renderCategoryBar();
 
-  catBar.addEventListener('click', e => {
+  document.getElementById('category-bar').addEventListener('click', e => {
     if (!e.target.classList.contains('cat-btn')) return;
-    catBar.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('category-bar').querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
     renderProducts();
   });
 
-  document.getElementById('search-input').addEventListener('input', renderProducts);
+  const searchInput = document.getElementById('search-input');
+  const searchClear = document.getElementById('search-clear');
+
+  searchInput.addEventListener('input', () => {
+    searchClear.classList.toggle('hidden', !searchInput.value);
+    renderProducts();
+  });
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchClear.classList.add('hidden');
+    renderProducts();
+    searchInput.focus();
+  });
+
+  document.querySelector('.sort-bar').addEventListener('click', e => {
+    if (!e.target.classList.contains('sort-btn')) return;
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentSort = e.target.dataset.sort;
+    renderProducts();
+  });
 
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -71,6 +111,10 @@ function bindEvents() {
   document.getElementById('modal-close').addEventListener('click', closeCheckoutModal);
   document.getElementById('checkout-modal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeCheckoutModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeCheckoutModal();
   });
 
   document.getElementById('order-phone').addEventListener('input', e => {
@@ -88,16 +132,38 @@ function bindEvents() {
   document.getElementById('checkout-form').addEventListener('submit', submitOrder);
 }
 
+// --- Category Bar ---
+function renderCategoryBar() {
+  const catBar = document.getElementById('category-bar');
+  const counts = {};
+  products.forEach(p => {
+    counts[p.category] = (counts[p.category] || 0) + 1;
+  });
+
+  catBar.innerHTML = allCategories.map(cat => {
+    const label = cat === 'all' ? '全部' : cat;
+    const count = cat === 'all' ? products.length : (counts[cat] || 0);
+    const active = cat === 'all' ? ' active' : '';
+    return `<button class="cat-btn${active}" data-category="${escapeHTML(cat)}">${escapeHTML(label)} (${count})</button>`;
+  }).join('');
+}
+
 // --- Products ---
 function renderProducts() {
   const keyword = document.getElementById('search-input').value.trim().toLowerCase();
   const activeCat = document.querySelector('.cat-btn.active')?.dataset.category || 'all';
 
-  const filtered = products.filter(p => {
+  let filtered = products.filter(p => {
     const matchCat = activeCat === 'all' || p.category === activeCat;
     const matchSearch = !keyword || p.name.toLowerCase().includes(keyword) || p.description.toLowerCase().includes(keyword);
     return matchCat && matchSearch;
   });
+
+  if (currentSort === 'asc') {
+    filtered.sort((a, b) => a.price - b.price);
+  } else if (currentSort === 'desc') {
+    filtered.sort((a, b) => b.price - a.price);
+  }
 
   const grid = document.getElementById('product-grid');
 
@@ -124,15 +190,21 @@ function renderProducts() {
 // --- Cart ---
 function addToCart(productId) {
   const product = products.find(p => p.id === productId);
+  if (!product) return;
   const existing = cart.find(item => item.id === productId);
 
   if (existing) {
+    if (existing.quantity >= MAX_QUANTITY) {
+      showToast(`「${product.name}」最多添加 ${MAX_QUANTITY} 件`, 'error');
+      return;
+    }
     existing.quantity++;
   } else {
     cart.push({ ...product, quantity: 1 });
   }
 
   updateCartBadge();
+  saveCart();
   showToast(`已加入「${product.name}」`);
 }
 
@@ -164,7 +236,7 @@ function renderCart() {
       <div class="qty-control">
         <button onclick="changeQty(${item.id}, -1)">−</button>
         <span>${item.quantity}</span>
-        <button onclick="changeQty(${item.id}, 1)">+</button>
+        <button onclick="changeQty(${item.id}, 1)" ${item.quantity >= MAX_QUANTITY ? 'disabled title="已达上限"' : ''}>+</button>
       </div>
       <button class="btn-danger" onclick="removeFromCart(${item.id})">删除</button>
     </div>
@@ -184,17 +256,24 @@ function renderCart() {
 function changeQty(productId, delta) {
   const item = cart.find(i => i.id === productId);
   if (!item) return;
-  item.quantity += delta;
+  const newQty = item.quantity + delta;
+  if (newQty > MAX_QUANTITY) {
+    showToast(`最多添加 ${MAX_QUANTITY} 件`, 'error');
+    return;
+  }
+  item.quantity = newQty;
   if (item.quantity <= 0) {
     cart = cart.filter(i => i.id !== productId);
   }
   updateCartBadge();
+  saveCart();
   renderCart();
 }
 
 function removeFromCart(productId) {
   cart = cart.filter(i => i.id !== productId);
   updateCartBadge();
+  saveCart();
   renderCart();
 }
 
@@ -263,6 +342,7 @@ async function submitOrder(e) {
 
     cart = [];
     updateCartBadge();
+    saveCart();
     closeCheckoutModal();
     document.getElementById('checkout-form').reset();
     showToast('下单成功！');
@@ -294,7 +374,12 @@ async function renderOrders() {
   const container = document.getElementById('orders-content');
 
   if (orders.length === 0) {
-    container.innerHTML = '<div class="orders-empty"><div class="empty-icon">📦</div><p>暂无订单</p></div>';
+    container.innerHTML = `
+      <div class="orders-empty">
+        <div class="empty-icon">📦</div>
+        <p>暂无订单，<a href="#" class="link-go-shop" onclick="switchPage('products');document.querySelector('[data-page=products]').click();return false;">去逛逛吧</a></p>
+      </div>
+    `;
     return;
   }
 
@@ -313,7 +398,7 @@ async function renderOrders() {
         `).join('')}
       </div>
       <div class="order-footer">
-        <span class="order-address">${escapeHTML(order.name)} / ${escapeHTML(order.phone)} / ${escapeHTML(order.address)}</span>
+        <span class="order-address">${escapeHTML(order.name)} / ${maskPhone(order.phone)} / ${escapeHTML(order.address)}</span>
         <span class="order-total">${formatPrice(order.total)}</span>
       </div>
     </div>
