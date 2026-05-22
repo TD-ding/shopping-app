@@ -20,20 +20,22 @@ function writeJSON(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-// 获取所有商品
+function escapeHTML(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 app.get('/api/products', (req, res) => {
   const products = readJSON(productsPath);
   res.json(products);
 });
 
-// 获取商品分类列表
 app.get('/api/categories', (req, res) => {
   const products = readJSON(productsPath);
   const categories = [...new Set(products.map(p => p.category))];
   res.json(categories);
 });
 
-// 提交订单
 app.post('/api/orders', (req, res) => {
   const { name, phone, address, items } = req.body;
 
@@ -41,14 +43,41 @@ app.post('/api/orders', (req, res) => {
     return res.status(400).json({ error: '请填写完整的收货信息' });
   }
 
+  if (!/^1[3-9]\d{9}$/.test(phone)) {
+    return res.status(400).json({ error: '手机号格式不正确' });
+  }
+
+  const allProducts = readJSON(productsPath);
+  const productMap = new Map(allProducts.map(p => [p.id, p]));
+
+  let total = 0;
+  const verifiedItems = [];
+
+  for (const item of items) {
+    const product = productMap.get(item.id);
+    if (!product) {
+      return res.status(400).json({ error: `商品不存在（id: ${item.id}）` });
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+      return res.status(400).json({ error: '商品数量无效' });
+    }
+    total += product.price * item.quantity;
+    verifiedItems.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: item.quantity
+    });
+  }
+
   const orders = readJSON(ordersPath);
   const order = {
     id: Date.now(),
-    name,
-    phone,
-    address,
-    items,
-    total: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    name: escapeHTML(name),
+    phone: escapeHTML(phone),
+    address: escapeHTML(address),
+    items: verifiedItems,
+    total,
     createdAt: new Date().toISOString()
   };
 
@@ -57,7 +86,6 @@ app.post('/api/orders', (req, res) => {
   res.json({ message: '下单成功', order });
 });
 
-// 获取订单列表
 app.get('/api/orders', (req, res) => {
   const orders = readJSON(ordersPath);
   res.json(orders);
