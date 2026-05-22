@@ -7,7 +7,11 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- 顶部导航 -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <p>加载中...</p>
+  </div>
+
   <header>
     <div class="header-inner">
       <h1 class="logo">Mini Shop</h1>
@@ -19,30 +23,24 @@
     </div>
   </header>
 
-  <!-- 商品列表页 -->
   <main id="page-products" class="page active">
     <div class="toolbar">
       <div class="search-box">
         <input type="text" id="search-input" placeholder="搜索商品...">
       </div>
-      <div class="category-bar" id="category-bar">
-        <button class="cat-btn active" data-category="all">全部</button>
-      </div>
+      <div class="category-bar" id="category-bar"></div>
     </div>
     <div class="product-grid" id="product-grid"></div>
   </main>
 
-  <!-- 购物车页 -->
   <main id="page-cart" class="page">
     <div id="cart-content"></div>
   </main>
 
-  <!-- 订单页 -->
   <main id="page-orders" class="page">
     <div id="orders-content"></div>
   </main>
 
-  <!-- 结算弹窗 -->
   <div class="modal-overlay" id="checkout-modal">
     <div class="modal">
       <div class="modal-header">
@@ -56,20 +54,20 @@
         </div>
         <div class="form-group">
           <label>手机号码</label>
-          <input type="tel" id="order-phone" required placeholder="请输入手机号">
+          <input type="tel" id="order-phone" required placeholder="请输入11位手机号" pattern="^1[3-9]\d{9}$">
+          <span class="form-hint" id="phone-hint"></span>
         </div>
         <div class="form-group">
           <label>收货地址</label>
           <textarea id="order-address" required placeholder="请输入详细地址"></textarea>
         </div>
         <div class="order-summary" id="order-summary"></div>
-        <button type="submit" class="btn-primary btn-checkout">提交订单</button>
+        <button type="submit" class="btn-primary btn-checkout" id="btn-submit-order">提交订单</button>
       </form>
     </div>
   </div>
 
-  <!-- Toast 提示 -->
-  <div id="toast" class="toast"></div>
+  <div id="toast-container" class="toast-container"></div>
 
   <script src="app.js"></script>
 </body>
