@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Shop</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <header>
+    <div class="header-inner">
+      <h1 class="logo">Mini Shop</h1>
+      <nav>
+        <button class="nav-btn active" data-page="products">商品</button>
+        <button class="nav-btn" data-page="cart">购物车 <span id="cart-count" class="badge">0</span></button>
+        <button class="nav-btn" data-page="orders">订单</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 商品列表页 -->
+  <main id="page-products" class="page active">
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="搜索商品...">
+      </div>
+      <div class="category-bar" id="category-bar">
+        <button class="cat-btn active" data-category="all">全部</button>
+      </div>
+    </div>
+    <div class="product-grid" id="product-grid"></div>
+  </main>
+
+  <!-- 购物车页 -->
+  <main id="page-cart" class="page">
+    <div id="cart-content"></div>
+  </main>
+
+  <!-- 订单页 -->
+  <main id="page-orders" class="page">
+    <div id="orders-content"></div>
+  </main>
+
+  <!-- 结算弹窗 -->
+  <div class="modal-overlay" id="checkout-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>确认下单</h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <form id="checkout-form">
+        <div class="form-group">
+          <label>收货人姓名</label>
+          <input type="text" id="order-name" required placeholder="请输入姓名">
+        </div>
+        <div class="form-group">
+          <label>手机号码</label>
+          <input type="tel" id="order-phone" required placeholder="请输入手机号">
+        </div>
+        <div class="form-group">
+          <label>收货地址</label>
+          <textarea id="order-address" required placeholder="请输入详细地址"></textarea>
+        </div>
+        <div class="order-summary" id="order-summary"></div>
+        <button type="submit" class="btn-primary btn-checkout">提交订单</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
