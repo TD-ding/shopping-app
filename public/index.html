@@ -12,6 +12,10 @@
     <p>加载中...</p>
   </div>
 
+  <div class="top-notice" id="top-notice">
+    <span id="top-notice-text"></span>
+  </div>
+
   <header>
     <div class="header-inner">
       <h1 class="logo">Mini Shop</h1>
@@ -30,7 +34,9 @@
         <button class="search-clear hidden" id="search-clear" title="清除">&times;</button>
       </div>
       <div class="toolbar-row">
-        <div class="category-bar" id="category-bar"></div>
+        <div class="category-bar" id="category-bar">
+          <button class="fav-filter-btn" id="fav-filter-btn">❤️ 仅看收藏</button>
+        </div>
         <div class="sort-bar">
           <button class="sort-btn active" data-sort="default">默认</button>
           <button class="sort-btn" data-sort="asc">价格 ↑</button>
@@ -48,6 +54,24 @@
   <main id="page-orders" class="page">
     <div id="orders-content"></div>
   </main>
+
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal detail-modal">
+      <div class="modal-header">
+        <h2 id="detail-title"></h2>
+        <button class="modal-close" id="detail-close">&times;</button>
+      </div>
+      <div class="detail-body">
+        <img id="detail-img" class="detail-img" src="" alt="">
+        <div class="detail-category" id="detail-category"></div>
+        <p class="detail-desc" id="detail-desc"></p>
+        <div class="detail-footer">
+          <span class="price" id="detail-price"></span>
+          <button class="btn-primary" id="detail-add-cart">加入购物车</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="modal-overlay" id="checkout-modal">
     <div class="modal">
