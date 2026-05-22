@@ -26,7 +26,28 @@ function maskPhone(phone) {
 }
 
 function saveCart() { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch {} }
-function loadCart() { try { const d = localStorage.getItem(CART_KEY); if (d) cart = JSON.parse(d); } catch {} }
+function loadCart() {
+  try {
+    const d = localStorage.getItem(CART_KEY);
+    if (d) cart = JSON.parse(d);
+  } catch { cart = []; }
+}
+
+function syncCartWithProducts() {
+  if (!products.length) return;
+  const validIds = new Set(products.map(p => p.id));
+  cart = cart.filter(item => validIds.has(item.id));
+  cart.forEach(item => {
+    const fresh = products.find(p => p.id === item.id);
+    if (fresh) {
+      item.price = fresh.price;
+      item.name = fresh.name;
+      item.image = fresh.image;
+      item.description = fresh.description;
+    }
+  });
+  saveCart();
+}
 function getFavorites() { try { const d = localStorage.getItem(FAV_KEY); return d ? JSON.parse(d) : []; } catch { return []; } }
 function saveFavorites(favs) { try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch {} }
 function isFavorite(id) { return getFavorites().includes(id); }
@@ -43,6 +64,7 @@ async function init() {
   updateCartBadge();
   try {
     await Promise.all([loadProducts(), loadCategories()]);
+    syncCartWithProducts();
     bindEvents();
     renderProducts();
   } catch (err) {
@@ -354,7 +376,7 @@ async function renderOrders() {
     container.innerHTML = '<div class="orders-empty"><div class="empty-icon">📦</div><p>暂无订单，<a href="#" class="link-go-shop" onclick="switchPage(\'products\');document.querySelector(\'[data-page=products]\').click();return false;">去逛逛吧</a></p></div>';
     return;
   }
-  container.innerHTML = orders.reverse().map(order => `<div class="order-card">
+  container.innerHTML = [...orders].reverse().map(order => `<div class="order-card">
     <div class="order-header"><span class="order-id">订单号：${escapeHTML(String(order.id))}</span><span class="order-date">${escapeHTML(new Date(order.createdAt).toLocaleString('zh-CN'))}</span></div>
     <div class="order-body">${order.items.map(item => `<div class="order-product"><span>${escapeHTML(item.name)} × ${item.quantity}</span><span>${formatPrice(item.price * item.quantity)}</span></div>`).join('')}</div>
     <div class="order-footer"><span class="order-address">${escapeHTML(order.name)} / ${maskPhone(order.phone)} / ${escapeHTML(order.address)}</span><span class="order-total">${formatPrice(order.total)}</span></div>
